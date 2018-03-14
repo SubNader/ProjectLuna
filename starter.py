@@ -2,7 +2,6 @@
 
 # Imports
 import paramiko
-import subprocess
 
 # Read in the properties file
 parameters = dict()
@@ -38,56 +37,65 @@ for parameter in parameters:
 		writers[id] = parameters[parameter]
 		print("Fetched Writer", id, "| IP:", writers[id])
 
+
 # Server starting component
+
 ssh = paramiko.SSHClient()
 ssh.load_system_host_keys()
-ssh.connect(server_ip, username="root", password="")
+ssh.connect(server_ip, username="", password="")
 
 # Prepare command
-directory = ""
-command = ' '.join(["nohup python3",directory])
-server_script_filename = "server.py"
+command = "nohup python3 -u ~/ProjectLuna/server.py"
 
 # Start server over SSH
 max_clients = (len(readers)+len(writers))
-server_command = ''.join([command, server_script_filename,' ', str(max_clients), ' >/dev/null 2>&1 &'])
-print(server_command)
+server_command = command+' '+str(max_clients)+' </dev/null >/dev/null 2>&1 &'
+print("Server run command:", server_command)
 ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(server_command)
 
-for line in iter(ssh_stdout.readline,""):
-	print(line)
+# Alert
 print("Started server on",server_ip,":",server_port)
 
+# Close connection
+ssh.close()
 
-# Set reader and writer script filenames
-reader_script_filename = "reader.py"
-writer_script_filename = "writer.py"
-directory = ""
-command = ''.join(["nohup python3", ' ', directory])
+# Set reader and writer script commands
+reader_command = "nohup python3 ~/ProjectLuna/reader.py"
+writer_command = "nohup python3 ~/ProjectLuna/writer.py"
+
+# SSH credentials
+ssh_username=""
+ssh_password=""
 
 # Start readers
 for  reader_id, reader_address in readers.items():
-	print("Starting reader", reader_id,"client on", reader_address)
+	print("Starting a reader", reader_id,"client on", reader_address)
 	
 	# Start reader over SSH | Assuming password-less root access is enabled
-
-	ssh.connect(reader_address, username="root", password="")
-	reader_command = ''.join([command , reader_script_filename,' ', reader_id,' ', parameters['numberOfAccesses'],' ',  parameters['server'], ' >/dev/null 2>&1 &'])
-	print(reader_command)
-
-	ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(reader_command)
-	for line in iter(ssh_stdout.readline,""):
-		print(line)
+	ssh = paramiko.SSHClient()
+	ssh.load_system_host_keys()
+	ssh.connect(reader_address, username=ssh_username, password=ssh_password)
+	final_reader_command = reader_command+' '+reader_id+' '+parameters['numberOfAccesses']+' '+parameters['server']+' </dev/null >/dev/null 2>&1 &'
+	ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(final_reader_command)
+	# Alert
+	print("Reader run command:", final_reader_command)
+	
+	# Close connection
+	ssh.close()
 
 # Start writers
 for writer_id, writer_address in writers.items():
 	print("Starting a writer", writer_id,"client on", writer_address)
 
 	# Start writer over SSH | Assuming password-less root access is enabled
-	ssh.connect(writer_address, username="root", password="")
-	writer_command = ''.join([command, writer_script_filename,' ', writer_id,' ', parameters['numberOfAccesses'],' ', parameters['server'], ' >/dev/null 2>&1 &'])
-	print(writer_command)
+	ssh = paramiko.SSHClient()
+	ssh.load_system_host_keys()
+	ssh.connect(writer_address, username=ssh_username, password=ssh_password)
+	final_writer_command = writer_command+' '+writer_id+' '+parameters['numberOfAccesses']+' '+parameters['server']+' </dev/null >/dev/null 2>&1 &'
+	ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(final_writer_command)
 	
-	ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(writer_command)
-	for line in iter(ssh_stdout.readline,""):
-		print(line)
+	# Alert
+	print("Writer run command:", final_writer_command)
+	
+	# Close connection
+	ssh.close()

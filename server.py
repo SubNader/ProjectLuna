@@ -116,14 +116,14 @@ if __name__ == "__main__":
 		output_file.write("Readers:\nsSeq\toVal\trID\trNum\n")
 		for row in ReaderList:
 			for item in row:
-				output_file.write(''.join([str(item) , "\t"]))
+				output_file.write(''.join([str(item) , "\t\t"]))
 			output_file.write("\n")	
 		
 		# Write log files for writers
 		output_file.write("Writers:\nsSeq\toVal\twID\n")	
 		for row in WriterList:
 			for item in row:
-				output_file.write(''.join([str(item) , "\t"]))
+				output_file.write(''.join([str(item) , "\t\t"]))
 			output_file.write("\n")	
 		output_file.close()
 
