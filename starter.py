@@ -1,5 +1,8 @@
 # Starter component - Starts the clients and servers over SSH 
 
+# Debug mode
+debug = False
+
 # Imports
 import paramiko
 
@@ -29,28 +32,32 @@ for parameter in parameters:
 	if(parameter.startswith("reader")):
 		id = parameter[len("reader"):]
 		readers[id] = parameters[parameter]
-		print("Fetched Reader", id, "| IP:", readers[id])
+		if debug:
+			print("Fetched Reader", id, "| IP:", readers[id])
 	
 	# Handle writers
 	elif(parameter.startswith("writer")):
 		id = parameter[len("writer"):]
 		writers[id] = parameters[parameter]
-		print("Fetched Writer", id, "| IP:", writers[id])
-
+		if debug:
+			print("Fetched Writer", id, "| IP:", writers[id])
 
 # Server starting component
-
+server_username = ""
+server_password = "" 
 ssh = paramiko.SSHClient()
 ssh.load_system_host_keys()
-ssh.connect(server_ip, username="", password="")
+ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+ssh.connect(server_ip, username=server_username, password=server_password)
 
 # Prepare command
 command = "nohup python3 -u ~/ProjectLuna/server.py"
 
 # Start server over SSH
 max_clients = (len(readers)+len(writers))
-server_command = command+' '+str(max_clients)+' </dev/null >/dev/null 2>&1 &'
-print("Server run command:", server_command)
+server_command = command+' '+str(max_clients)+' </dev/null  >>~/ProjectLuna/server.log 2>&1 &'
+if debug:
+	print("Server run command:", server_command)
 ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(server_command)
 
 # Alert
@@ -71,31 +78,36 @@ ssh_password=""
 for  reader_id, reader_address in readers.items():
 	print("Starting a reader", reader_id,"client on", reader_address)
 	
-	# Start reader over SSH | Assuming password-less root access is enabled
+	# Start reader over SSH
 	ssh = paramiko.SSHClient()
 	ssh.load_system_host_keys()
+	ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 	ssh.connect(reader_address, username=ssh_username, password=ssh_password)
-	final_reader_command = reader_command+' '+reader_id+' '+parameters['numberOfAccesses']+' '+parameters['server']+' </dev/null >/dev/null 2>&1 &'
+	final_reader_command = reader_command+' '+reader_id+' '+parameters['numberOfAccesses']+' '+parameters['server']+' </dev/null >>~/ProjectLuna/reader_'+reader_id+'.log 2>&1 &'
 	ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(final_reader_command)
+	
 	# Alert
-	print("Reader run command:", final_reader_command)
+	if debug:
+		print("Reader run command:", final_reader_command)
 	
 	# Close connection
 	ssh.close()
 
 # Start writers
 for writer_id, writer_address in writers.items():
-	print("Starting a writer", writer_id,"client on", writer_address)
+	print("Starting writer", writer_id,"client on", writer_address)
 
-	# Start writer over SSH | Assuming password-less root access is enabled
+	# Start writer over SSH
 	ssh = paramiko.SSHClient()
 	ssh.load_system_host_keys()
+	ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 	ssh.connect(writer_address, username=ssh_username, password=ssh_password)
-	final_writer_command = writer_command+' '+writer_id+' '+parameters['numberOfAccesses']+' '+parameters['server']+' </dev/null >/dev/null 2>&1 &'
+	final_writer_command = writer_command+' '+writer_id+' '+parameters['numberOfAccesses']+' '+parameters['server']+' </dev/null >>~/ProjectLuna/writer_'+writer_id+'.log 2>&1 &'
 	ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(final_writer_command)
 	
 	# Alert
-	print("Writer run command:", final_writer_command)
+	if debug:
+		print("Writer run command:", final_writer_command)
 	
 	# Close connection
 	ssh.close()

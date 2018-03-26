@@ -16,7 +16,7 @@ sSeq=0
 ReaderList = []
 
 # Alert
-print("Assigned reader ID:",rID,"\nNumber of accesses:", num_acc, "\nServer:",host,":",port)
+#print("Assigned reader ID:",rID,"\nNumber of accesses:", num_acc, "\nServer:",host,":",port)
 
 # Connect to host on the specified port
 c.connect((host, port))
@@ -35,14 +35,12 @@ for iteration in range (0,num_acc):
 
 
 # Create log file 
-with open(''.join(["log",rID,".txt"]),'a+' ) as output_file:
 
-	output_file.write(''.join(["Client Type: Reader \nClient Name: ",rID,"\nrSeq\tsSeq\toVal\n"]))
+print(''.join(["Client Type: Reader \nClient Name: ",rID,"\nrSeq\tsSeq\toVal"]))
 
-	# Iterate through the Readerlist and write to file
-	for row in ReaderList:
-		for item in row:
-			output_file.write(''.join([str(item) , "\t"]))
-		output_file.write("\n")	
-	output_file.close()
-
+# Iterate through the Readerlist and write to file
+for row in ReaderList:
+	row_string = ''
+	for item in row:
+		row_string+=(str(item)+'\t'*2)
+	print(row_string)

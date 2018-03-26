@@ -25,6 +25,8 @@ max_clients = int(sys.argv[1])
 # Server port -- Assumed to be well-known
 port = 8995
 
+# Log alerts to file
+log_alerts = False
 
 def handle_request(c):
 
@@ -46,7 +48,8 @@ def handle_request(c):
 			c.sendall(str.encode(str(oVal)))
 			lock.acquire()
 			rID=c.recv(1024).decode().strip()
-			print("-- Handling READ request from reader #" + rID)	
+			if log_alerts:
+				print("-- Handling READ request from reader #" + rID)	
 			sSeq+=1
 			rNum=rNum-1
 			c.sendall(str.encode(str(sSeq))) 
@@ -62,7 +65,8 @@ def handle_request(c):
 			lock.acquire()
 			wID=c.recv(1024).decode().strip()
 			oVal = wID
-			print("-- Handling WRITE request from writer #" + wID)	
+			if log_alerts:
+				print("-- Handling WRITE request from writer #" + wID)	
 			WriterList.append((sSeq,oVal,wID))
 			sSeq+=1
 			c.sendall(str.encode(str(sSeq))) 
@@ -88,7 +92,8 @@ if __name__ == "__main__":
 	threads = []
 	
 	# Alert
-	print("# === Server started on port:",port,"=== #")
+	if log_alerts:
+		print("# === Server started on port:",port,"=== #")
 	
 	# Run server indefinitely 
 	while True:
@@ -98,7 +103,8 @@ if __name__ == "__main__":
 		thread.daemon = True
 		thread.start()
 		threads.append(thread)
-		print("Currently serving",current_clients,"out of",max_clients,"clients")
+		if log_alerts:
+			print("Currently serving",current_clients,"out of",max_clients,"clients")
 		if current_clients == max_clients:
 			break
 	
@@ -110,23 +116,24 @@ if __name__ == "__main__":
 	mysocket.close()
 	
 	# Iterate through the Readerlist and write to file
-	with open("serverlog.txt",'a+' ) as output_file:
 
-		# Write log files for readers
-		output_file.write("Readers:\nsSeq\toVal\trID\trNum\n")
-		for row in ReaderList:
-			for item in row:
-				output_file.write(''.join([str(item) , "\t\t"]))
-			output_file.write("\n")	
-		
-		# Write log files for writers
-		output_file.write("Writers:\nsSeq\toVal\twID\n")	
-		for row in WriterList:
-			for item in row:
-				output_file.write(''.join([str(item) , "\t\t"]))
-			output_file.write("\n")	
-		output_file.close()
+	# Write log files for readers
+	print("Readers:\n\nsSeq\toVal\trID\trNum")
+	for row in ReaderList:
+		row_string = ''
+		for item in row:
+			row_string+=(str(item)+'\t'*2)
+		print(row_string)
+
+	# Write log files for writers
+	print("\nWriters:\n\nsSeq\toVal\twID")	
+	for row in WriterList:
+		row_string = ''
+		for item in row:
+			row_string+=(str(item)+'\t'*2)
+		print(row_string)
 
 	# Exit gracefully
-	print("Gracefully exiting.. Good bye.")
+	if log_alerts:
+		print("Gracefully exiting.. Good bye.")
 	sys.exit(0)
