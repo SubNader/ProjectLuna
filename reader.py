@@ -1,42 +1,34 @@
 import sys
-import socket
 from time import sleep
 from random import uniform as rand_float
+import Pyro4 as pyro
 
 # Arguments and assignments
 arguments = sys.argv[1:] # Fetch arguments, discarding script name
-c = socket.socket()
 rID = arguments[0]
 num_acc = int(arguments[1])
 host = arguments[2]
-port = 8995 # Well-known
-rSeq=0
-oVal= -1
-sSeq=0
+rmi_port = int(arguments[3])
 ReaderList = []
 
-# Alert
-#print("Assigned reader ID:",rID,"\nNumber of accesses:", num_acc, "\nServer:",host,":",port)
 
-# Connect to host on the specified port
-c.connect((host, port))
+# Fetch the remote client handler object
+
+name_server = pyro.locateNS(host = host, port=rmi_port)
+client_handler_uri = name_server.lookup('client_handler')
+client_handler = pyro.Proxy(client_handler_uri)
 
 for iteration in range (0,num_acc):
 	
-	# Read request procedure
-	c.sendall("Client: Read Request.".encode())
-	rSeq = c.recv(1024).decode()
-	c.sendall("separaor".encode())
-	oVal = c.recv(1024).decode()
-	c.sendall(rID.encode())
-	sSeq = c.recv(1024).decode()
-	ReaderList.append((rSeq,sSeq,oVal))
-	sleep(rand_float(0,10))
+	rSeq, sSeq, oVal = client_handler.handle_reader(rID)
+	ReaderList.append((rSeq, sSeq, oVal))
+	sleep(rand_float(0,10))  
 
+client_handler.close()
 
 # Create log file 
 
-print(''.join(["Client Type: Reader \nClient Name: ",rID,"\nrSeq\tsSeq\toVal"]))
+print(''.join(["Client Type: Reader \nClient Name: ",str(rID),"\nrSeq\tsSeq\toVal"]))
 
 # Iterate through the Readerlist and write to file
 for row in ReaderList:
