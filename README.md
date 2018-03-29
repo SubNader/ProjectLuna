@@ -12,5 +12,5 @@ A distributed client-server implementation in Python
 - [x] Port reader module from sockets to RMI
 - [x] Port writer module from sockets to RMI
 - [x] Update remote starting module
-- [ ] Fix serving and locking orders
-- [ ] Finalize Project
+- [x] Fix serving and locking orders
+- [x] Finalize Project
